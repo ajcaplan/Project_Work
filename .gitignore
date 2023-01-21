@@ -1,0 +1,7 @@
+*.nc
+*.pdf
+*.bat
+*.png
+*.pyc
+
+Data/
