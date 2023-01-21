@@ -1,9 +1,11 @@
+# Don't want data, plots, machine-specific, junk
 *.nc
 *.pdf
 *.bat
 *.png
 *.pyc
 *.mp4
+*.url
 
 Data/
 Video plots/
