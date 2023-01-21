@@ -3,5 +3,8 @@
 *.bat
 *.png
 *.pyc
+*.mp4
 
 Data/
+Video plots/
+Plots/
