@@ -121,19 +121,18 @@ def plot_bes_fluct_spectrogram(
             str(int(2 ** n)), fontsize=32)
         for i in range(num_channels):
             ch = channels[i]
-            cs = axes[i].contourf(times + bes_time[idx1], 0.001 * freq[:new_lim], 
-                Sxx[ch][:new_lim,:], 16, cmap=plt.get_cmap('gnuplot2'), 
+            ct = axes[i].contourf(times + bes_time[idx1], 0.001 * freq[:new_lim], 
+                Sxx[ch][:new_lim,:], 16, cmap=plt.get_cmap('plasma'), levels=[0,0.00000001,0.0000001,0.000001,0.00001,0.0001,0.001,0.01,0.1,1.0,10.0],
                 norm=(colors.LogNorm()))
             axes[i].set_ylim(freq_lims)
             axes[i].tick_params(axis='y', labelsize=22)
             axes[i].set_ylabel(('ch ' + str(ch)), fontsize=24)
+            cbar = figure.colorbar(ct, shrink=0.9)
             if threshold is not None:
                 axes[i].axvline(threshold, color='r')
         axes[num_channels-1].tick_params(axis='x', labelsize=24)
         axes[num_channels-1].set_xlabel('time [s]', fontsize=26)
         axes[num_channels-1].set_xlim(timeslice)
-        cbar = figure.colorbar(cs, ax=axes, shrink=0.9)
-        cbar.set_label("Strength")
         plt.tight_layout()
         plt.subplots_adjust(wspace=0, hspace=0)
         plt.savefig('shot' + str(shot) + '_spectrogram_'+fname+'.png', 
@@ -161,7 +160,7 @@ def plot_bes_fluct_spectrogram(
         plt.xlim(timeslice)
         plt.savefig('shot' + str(shot) + '_ch' + str(channels) + 
                     '_BES_spectrogram_n' + str(int(2 ** n)) + '_' + fname + 
-                    '.png', format='png', transparent=False)
+                    '.png', format='png', transparent=True)
         plt.close()
 
 def plot_with_flux_surfaces(
