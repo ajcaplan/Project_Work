@@ -102,7 +102,7 @@ def plot_bes_fluctuations(
 
 def plot_bes_fluct_spectrogram(
         shot, bes_time, fluct_data, channels, timeslice, n, fname, 
-        threshold=None, freq_lims=[0.0, 200.0]):
+        threshold=None, freq_lims=[0.0, 200.0], save=True):
     # plot the BES fluctuation data spectrogram for one or more channels
     idx1 = (np.abs(bes_time - timeslice[0])).argmin()
     idx2 = (np.abs(bes_time - timeslice[1])).argmin()
@@ -127,7 +127,7 @@ def plot_bes_fluct_spectrogram(
             axes[i].set_ylim(freq_lims)
             axes[i].tick_params(axis='y', labelsize=22)
             axes[i].set_ylabel(('ch ' + str(ch)), fontsize=24)
-            cbar = figure.colorbar(ct, shrink=0.9)
+            cbar = figure.colorbar(ct, shrink=0.9, label="Strength [a.u.]")
             if threshold is not None:
                 axes[i].axvline(threshold, color='r')
         axes[num_channels-1].tick_params(axis='x', labelsize=24)
@@ -135,8 +135,10 @@ def plot_bes_fluct_spectrogram(
         axes[num_channels-1].set_xlim(timeslice)
         plt.tight_layout()
         plt.subplots_adjust(wspace=0, hspace=0)
-        plt.savefig('shot' + str(shot) + '_spectrogram_'+fname+'.png', 
-                    format='png', transparent=False)
+        if save == True:
+            plt.savefig('shot' + str(shot) + '_spectrogram_'+fname+'.png', format='png', transparent=False)
+        else:
+            plt.show()
         plt.close()
     else:
         end_lev = int(np.ceil(np.log10(np.max(Sxx[:][:int(
@@ -158,9 +160,12 @@ def plot_bes_fluct_spectrogram(
             plt.axvline(threshold, color='r')
         plt.xlabel('time [s]', fontsize=26)
         plt.xlim(timeslice)
-        plt.savefig('shot' + str(shot) + '_ch' + str(channels) + 
+        if save == True:
+            plt.savefig('shot' + str(shot) + '_ch' + str(channels) + 
                     '_BES_spectrogram_n' + str(int(2 ** n)) + '_' + fname + 
                     '.png', format='png', transparent=True)
+        else:
+            plt.show()
         plt.close()
 
 def plot_with_flux_surfaces(
