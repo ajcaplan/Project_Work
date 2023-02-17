@@ -23,6 +23,8 @@ from cycler import cycler
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+coil_nums = np.asarray([204, 206, 207, 210, 212, 213, 214, 215, 216, 217, 218])
+mirnov_f_samp = 499999.94441896596
 
 # smoothing function
 def smooth(y, box_pts):
