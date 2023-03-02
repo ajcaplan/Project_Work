@@ -77,8 +77,8 @@ def butter_bandstop_filter(data, lowcut, highcut, fs, order=2):
     return y
 
 # gaussian function
-def gaussian(x, a, x0, sigma):
-    return a * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
+def gaussian(x, a, x0, sigma, offset):
+    return offset + a * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
 # straight line in a log plot
 def log_line(x, m, c):

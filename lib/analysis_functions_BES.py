@@ -192,24 +192,24 @@ def kf_spec_sum_windows(bes_time, fluct_data, apdpos, col, timeslices):
     return first_kf[0], first_kf[1], kf_summed
 
 # Main function for plotting dispersion relations. Arguments offer control of plot type and saving
-def plot_kf_spec(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=None, box_sum=None, conditional=False, save=False):
+def plot_kf_spec(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=None, smooth_pts=None, conditional=False, save=False):
     if fmax == None:
         fmax = np.max(f_arr)
         
-    if box_sum != None:
+    if smooth_pts != None:
         line_idx = np.abs(f_arr - fmin).argmin()
-        this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+box_sum]), axis=0)
-        boxed_spec = np.array(this_block)
-        boxed_freqs = np.array(f_arr[line_idx])
+        this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+smooth_pts]), axis=0)
+        smooth_spec = np.array(this_block)
+        smooth_freqs = np.array(f_arr[line_idx])
         line_idx += 1
         
-        while line_idx < np.abs(f_arr - fmax).argmin() + box_sum:
-            this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+box_sum]), axis=0)
-            boxed_spec = np.vstack((boxed_spec, this_block))
-            boxed_freqs = np.append(boxed_freqs, f_arr[line_idx])
+        while line_idx < np.abs(f_arr - fmax).argmin() + smooth_pts:
+            this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+smooth_pts]), axis=0)
+            smooth_spec = np.vstack((smooth_spec, this_block))
+            smooth_freqs = np.append(smooth_freqs, f_arr[line_idx])
             line_idx += 1
-        kf_matrix = boxed_spec
-        f_arr = boxed_freqs
+        kf_matrix = smooth_spec
+        f_arr = smooth_freqs
     if conditional == True:
         kf_matrix = np.transpose(np.transpose(kf_matrix)/np.sum(kf_matrix,axis=1))
         cbar_label = r"$\log\vert S(k|f)\vert^2$"
@@ -236,6 +236,7 @@ def plot_kf_spec(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=
     else:
         plt.show()
     plt.close()
+
 
 # Investigate cross correlation of particular frequencies with time
 def cross_corr_fbands(shot, bes_time, fluct_data, col, timeslice, band1, band2,
@@ -276,7 +277,13 @@ def cross_corr_fbands(shot, bes_time, fluct_data, col, timeslice, band1, band2,
     
     dt = np.mean(np.diff(times))
     lags = dt*sig.correlation_lags(len(band1_data), len(band2_data))
-    ccs = sig.correlate(band1_data, band2_data, method="fft")
+    
+    cross_corr_coeff = np.fft.ifft(np.fft.fft(ref_data) * np.conj(
+            np.fft.fft(ch_data))) / (len(ch_data) * np.sqrt(
+                    np.mean(ref_data ** 2) * np.mean(ch_data ** 2)))
+    ccs = np.roll(cross_corr_coeff, int(0.5 * len(cross_corr_coeff)))
+    
+    #ccs = sig.correlate(band1_data, band2_data, method="fft")
     if plot_cc == True:
         figure, axes = plt.subplots(1, 1, sharex=True, figsize=(10, 4))
         axes.plot(lags, ccs, "k", linewidth=0.5)
@@ -292,3 +299,79 @@ def cross_corr_fbands(shot, bes_time, fluct_data, col, timeslice, band1, band2,
         plt.close()
     
     return lags, ccs
+
+# Look more clearly for peaks in frequency space
+def plot_freq_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, use_ks, fmin=0.0, ylims=None, fmax=None, plot=False, save=False):
+    f_arr, k_arr, kf_matrix = kf_spec_sum_windows(bes_time, fluct_data, apdpos, col, timeslices)
+    if fmax == None:
+        fmax = np.max(f_arr)
+    f_start = (np.abs(f_arr-fmin)).argmin()
+    f_end = (np.abs(f_arr-fmax)).argmin()
+    k_start = (np.abs(k_arr-use_ks[0])).argmin()
+    k_end = (np.abs(k_arr-use_ks[-1])).argmin() + 1
+    
+    f_data = np.sum(kf_matrix[f_start:f_end,k_start:k_end], axis=1)
+    
+    """base_start = (np.abs(f_arr[f_start:f_end] - 15.0e3)).argmin()
+    base_end = (np.abs(f_arr[f_start:f_end] - 25.0e3)).argmin()
+    baseline = np.mean(kf_matrix[baseline_start:baseline_end,k_start:k_end])
+    f_data = f_data-baseline"""
+        
+    if plot != False:
+        fig, ax = plt.subplots(1, 1, figsize=(7, 4))
+        ax.plot(f_arr[f_start:f_end]*1e-3, np.log(np.abs(smooth(f_data,10))**2), linewidth=0.5)
+        ax.set_title(plot)
+        ax.text(.99, 1.045, "\#" + str(shot), ha='right', va='top', transform=ax.transAxes)
+        ax.text(.99, 0.955, r"$k=$" + str(use_ks) + " $\mathrm{m^{-1}}$", ha='right', va='top', transform=ax.transAxes)
+        ax.set_xlabel("Frequency [kHz]")
+        ax.set_ylabel(r"$\log\vert S(f)\vert^2$")
+        ax.set_xlim([f_arr[f_start]*1e-3, f_arr[f_end]*1e-3])
+        if ylims != None:
+            ax.set_ylim(ylims) # Useful if making multiple related plots - show on same scale
+        if save != False:
+            plt.savefig(save + ".png", format="png", bbox_inches="tight", dpi=300)
+        else:
+            plt.show()
+        plt.close()
+    return f_arr[f_start:f_end], f_data
+
+# Look more clearly for peaks in frequency space
+def plot_wavenum_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, f_range, plot=False, fit=None, save=False):
+    f_arr, k_arr, kf_matrix = kf_spec_sum_windows(bes_time, fluct_data, apdpos, col, timeslices)
+    f_start = (np.abs(f_arr-f_range[0])).argmin()
+    f_end = (np.abs(f_arr-f_range[1])).argmin()
+    profile = np.sum(kf_matrix[f_start:f_end,:],axis=0)
+    
+    if fit != None:
+        # fit the data
+        popt, pcov = curve_fit(fit, k_arr[3:10], profile[3:10])
+        residuals = profile[3:10] - fit(k_arr[3:10], *popt)
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((profile[3:10] - np.mean(profile[3:10]))**2)
+        r_squared = 1 - (ss_res / ss_tot)
+        fit_x = np.linspace(k_arr[3], k_arr[9], 100)
+        fit_y = fit(fit_x, *popt)
+
+    if plot != False:
+        fig, ax = plt.subplots(1, 1, figsize=(7, 4))
+        ax.scatter(k_arr, np.log(np.abs(profile)**2), linewidth=0.5, marker="x")
+        if fit != None:
+            ax.plot(fit_x, np.log(np.abs(fit_y)**2), linewidth=0.5)
+            annot = r"$\mu=$" + str(np.round(popt[1],3)) + " $\mathrm{m^{-1}}$, $R^2=$" + str(np.round(r_squared,3))
+            ax.legend(["Data", fit.__name__ + " fit"], loc="upper right")
+            ax.text(0.01, 0.975, annot, ha='left', va='top', transform=ax.transAxes)
+        
+        ax.set_title(plot)
+        ax.text(.99, 1.045, "\#" + str(shot), ha='right', va='top', transform=ax.transAxes)
+        ax.set_xlabel(r"Wavenumber [$\mathrm{m^{-1}}$]")
+        ax.set_ylabel(r"$\log\vert S(k)\vert^2$")
+        ax.set_xlim([k_arr[0], k_arr[-1]])
+        f_annot = str(list(np.round((np.asarray(f_range)*1e-3).astype(int),0))) + " kHz"
+        ax.text(0.01, 0.915, r"$f\in$" + f_annot, ha='left', va='top', transform=ax.transAxes)
+
+        if save != False:
+            plt.savefig(save + ".png", format="png", bbox_inches="tight", dpi=300)
+        else:
+            plt.show()
+        plt.close()
+    return k_arr, profile, popt[1]
