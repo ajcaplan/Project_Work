@@ -1,15 +1,15 @@
 from lib.imports_BES import *
 from lib.analysis_functions_BES import *
 
-def get_kf_spec_mirnov(mirnov_time, mirnov_data, coilpos, timeslice):    
-    space_array = [coilpos[i][1] for i in range(len(coilpos))] # Get Z-coordinates of each coil
+def get_kf_spec_mirnov(mirnov_time, mirnov_data, coilpos_angles, timeslice):    
+    space_array = [coilpos_angles[i] for i in range(len(coilpos_angles))] # Get Z-coordinates of each coil
     space_array = np.asarray(space_array)
     spec = []
-    for coil in range(len(coilpos)): # FFT each coil in time
+    for coil in range(len(coilpos_angles)): # FFT each coil in time
         fft = fft_channel(mirnov_time, mirnov_data, coil, timeslice)
         f_transform = fft[1]
         spec.append(f_transform) # Each row of spec corresponds to a coil.
-    f_arr = fft[0] # Frequency array is the same for all coil so just save any one.
+    f_arr = fft[0] # Frequency array is the same for all coils so just save any one.
     
     spec = np.asarray(spec)
     spec = np.transpose(spec) # Now each row is a time point as required by calc_kspec

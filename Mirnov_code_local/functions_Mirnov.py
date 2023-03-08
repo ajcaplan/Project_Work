@@ -25,15 +25,16 @@ def plot_coil_data(shot, mirnov_time, mirnov_data, coil_index, timeslice=None, s
     plt.close()
 
 # Simple plot of coil positions
-def plot_coil_positions(coilpos, coil_nums, save=False):
+def plot_coil_positions(coilpos, coil_angles, coil_nums, save=False):
     plt.scatter(coilpos[:,0], coilpos[:,1], marker="x")
     for i, txt in enumerate(coil_nums):
-        plt.annotate(txt, (coilpos[i,0], coilpos[i,1]), xytext=(coilpos[i,0]-0.03, coilpos[i,1]-0.025))
+        plt.annotate(txt, (coilpos[i,0], coilpos[i,1]), xytext=(coilpos[i,0]+0.01, coilpos[i,1]-0.025))
+        plt.annotate(r"$\theta=$" + str(np.round(coil_angles[i],3)), (coilpos[i,0], coilpos[i,1]), xytext=(coilpos[i,0]-0.07, coilpos[i,1]-0.025))
 
     plt.xlabel("R [m]")
     plt.ylabel("Z [m]")
     plt.title("Mirnov Coil Positions and Numbers")
-    plt.xlim(left=1.4,right=1.9)
+    plt.xlim(left=1.35,right=1.9)
     if save == True:
         plt.savefig("coil_pos.pdf", format="pdf", bbox_inches="tight")
     else:
