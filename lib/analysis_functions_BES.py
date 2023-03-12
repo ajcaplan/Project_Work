@@ -343,7 +343,6 @@ def plot_wavenum_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, f_
     profile = np.sum(kf_matrix[f_start:f_end,:],axis=0)
     
     if fit != None:
-        # fit the data
         popt, pcov = curve_fit(fit, k_arr[3:10], profile[3:10])
         residuals = profile[3:10] - fit(k_arr[3:10], *popt)
         ss_res = np.sum(residuals**2)
@@ -354,9 +353,11 @@ def plot_wavenum_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, f_
 
     if plot != False:
         fig, ax = plt.subplots(1, 1, figsize=(7, 4))
-        ax.scatter(k_arr, np.log(np.abs(profile)**2), linewidth=0.5, marker="x")
+        #ax.scatter(k_arr, np.log(np.abs(profile)**2), linewidth=0.5, marker="x")
+        ax.scatter(k_arr, profile, linewidth=0.5, marker="x")
         if fit != None:
-            ax.plot(fit_x, np.log(np.abs(fit_y)**2), linewidth=0.5)
+            #ax.plot(fit_x, np.log(np.abs(fit_y)**2), linewidth=0.5)
+            ax.plot(fit_x, fit_y, linewidth=0.5)
             annot = r"$\mu=$" + str(np.round(popt[1],3)) + " $\mathrm{m^{-1}}$, $R^2=$" + str(np.round(r_squared,3))
             ax.legend(["Data", fit.__name__ + " fit"], loc="upper right")
             ax.text(0.01, 0.975, annot, ha='left', va='top', transform=ax.transAxes)
@@ -364,7 +365,7 @@ def plot_wavenum_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, f_
         ax.set_title(plot)
         ax.text(.99, 1.045, "\#" + str(shot), ha='right', va='top', transform=ax.transAxes)
         ax.set_xlabel(r"Wavenumber [$\mathrm{m^{-1}}$]")
-        ax.set_ylabel(r"$\log\vert S(k)\vert^2$")
+        ax.set_ylabel(r"$S(k)$")
         ax.set_xlim([k_arr[0], k_arr[-1]])
         f_annot = str(list(np.round((np.asarray(f_range)*1e-3).astype(int),0))) + " kHz"
         ax.text(0.01, 0.915, r"$f\in$" + f_annot, ha='left', va='top', transform=ax.transAxes)
@@ -374,4 +375,7 @@ def plot_wavenum_profile(shot, bes_time, fluct_data, apdpos, col, timeslices, f_
         else:
             plt.show()
         plt.close()
-    return k_arr, profile, popt[1]
+    if fit != None:
+        return k_arr, profile, popt[1]
+    else:
+        return k_arr, profile

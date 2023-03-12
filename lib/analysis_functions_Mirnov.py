@@ -20,6 +20,53 @@ def get_kf_spec_mirnov(mirnov_time, mirnov_data, coilpos_angles, timeslice):
     
     return f_arr, k_arr, kf_matrix
 
+# Main function for plotting dispersion relations. Arguments offer control of plot type and saving
+def plot_kf_spec_mirnov(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=None, smooth_pts=None, conditional=False, save=False):
+    if fmax == None:
+        fmax = np.max(f_arr)
+        
+    if smooth_pts != None:
+        line_idx = np.abs(f_arr - fmin).argmin()
+        this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+smooth_pts]), axis=0)
+        smooth_spec = np.array(this_block)
+        smooth_freqs = np.array(f_arr[line_idx])
+        line_idx += 1
+        
+        while line_idx < np.abs(f_arr - fmax).argmin() + smooth_pts:
+            this_block = np.sum(np.abs(kf_matrix[line_idx:line_idx+smooth_pts]), axis=0)
+            smooth_spec = np.vstack((smooth_spec, this_block))
+            smooth_freqs = np.append(smooth_freqs, f_arr[line_idx])
+            line_idx += 1
+        kf_matrix = smooth_spec
+        f_arr = smooth_freqs
+        
+    if conditional == True:
+        kf_matrix = np.transpose(np.transpose(kf_matrix)/np.sum(kf_matrix,axis=1))
+        cbar_label = r"$\log\vert S(k|f)\vert^2$"
+    else:
+        cbar_label = r"$\log\vert S(f,k)\vert^2$"
+    
+    # Only need to plot a section of the spectrum. At least half not needed.
+    kf_matrix = kf_matrix[(np.abs(f_arr - fmin)).argmin():(np.abs(f_arr - fmax)).argmin()]
+    f_arr = f_arr[(np.abs(f_arr - fmin)).argmin():(np.abs(f_arr - fmax)).argmin()]
+
+    # Convert to array with rounded frequencies for easier of plotting.
+    kf_matrix_plot = pd.DataFrame(kf_matrix, index=np.around(f_arr*1e-3,0), columns=np.around(k_arr,1))
+
+    # For only plotting tick at every 50 kHz
+    interval = int(np.abs(f_arr - fint).argmin())
+
+    # Plot log of values so small enough range for features to be visible
+    sns.heatmap(np.log(np.abs(kf_matrix_plot)**2)[::-1], yticklabels=interval, cmap="plasma", cbar_kws={"label": cbar_label})
+    plt.title(plot_title)
+    plt.ylabel("Frequency [kHz]")
+    plt.xlabel("Poloidal Mode Number")
+    if save != False:
+        plt.savefig(save + ".png", format="png", bbox_inches="tight", dpi=300)
+    else:
+        plt.show()
+    plt.close()
+
 
 # Adds STFTs for all coils and optionally plots result with vlines for showing windows
 def sum_mirnov_fluct_spectrogram(shot, mirnov_time, mirnov_data, timeslice, n=8, freq_lims=[0.0, 200.0], vlines=None, plot=True, save=False):
