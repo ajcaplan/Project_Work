@@ -2,19 +2,20 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import seaborn as sns
+import scipy.signal as sig
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d, interp2d
+from scipy.integrate import trapz
 from netCDF4 import Dataset
-import scipy.signal as sig
 import matplotlib.pyplot as plt
-from astropy.convolution import convolve
 from matplotlib import colors
+from matplotlib.gridspec import GridSpec
+import matplotlib.path as mplPath
+from astropy.convolution import convolve
 import shapely.geometry as geom
 import imageio
 import math
 import copy
-from matplotlib.gridspec import GridSpec
-import matplotlib.path as mplPath
 from cycler import cycler
 import datetime
 
