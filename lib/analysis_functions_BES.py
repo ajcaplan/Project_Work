@@ -191,6 +191,8 @@ def kf_spec_sum_windows(bes_time, fluct_data, apdpos, col, timeslices):
         kf_summed += np.abs(get_kf_spec(bes_time, fluct_data, apdpos, col, timeslices[window])[2])
     return first_kf[0], first_kf[1], kf_summed
 
+
+# DEPRECATED: plot_kf_spec. Use instead plot_dispersion_relation(...) in analysis_functions_general
 # Main function for plotting dispersion relations. Arguments offer control of plot type and saving
 def plot_kf_spec(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=None, smooth_pts=None, conditional=False, save=False):
     if fmax == None:
