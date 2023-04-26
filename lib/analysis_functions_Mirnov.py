@@ -167,3 +167,32 @@ def sum_mirnov_fluct_spectrogram(shot, mirnov_time, mirnov_data, timeslice, n=8,
             plt.show()
         plt.close()
     return freq, times + mirnov_time[idx1], summed_Sxx
+
+# Function to approximate closest distance from a given Mirnov coil to the separatrix in a given time
+def coil_to_sep(equilib_time, equilib_R, equilib_Z, equilib_psi, coilpos, timeslice, coil):
+    # Only looking for points in the relevant Z and towards outside
+    # Add on bits to ensure the contour extends far enough
+    zmin = (np.abs(equilib_Z+0.5)).argmin()
+    zmax = (np.abs(equilib_Z-0.5)).argmin()
+    rmin = (np.abs(equilib_R-1.0)).argmin()
+    
+    # Convert timeslice to indices of equilib_time
+    if isinstance(timeslice, list) or isinstance(timeslice, np.ndarray):
+        idx1 = np.abs(equilib_time-timeslice[0]).argmin()
+        idx2 = np.abs(equilib_time-timeslice[1]).argmin()
+    else:
+        idx1 = np.abs(equilib_time-timeslice).argmin()
+        idx2 = idx1
+    
+    avgdist = 0.0
+    for time in range(idx1, idx2+1): # For each equilibria time point   
+        # Get path of separatrix
+        equilib_psi_t = equilib_psi[time] # Data at this time
+        CS = plt.contour(equilib_R[rmin:], equilib_Z[zmin:zmax], equilib_psi_t[zmin:zmax,rmin:], [1.0])
+        plt.close()
+        verts = mplPath.Path(CS.allsegs[0][0]).vertices # Convert from path to 2D array of points
+        dists = []
+        for pt in verts: # For each point on separatrix
+            dists.append(np.linalg.norm(coilpos[coil]-pt)) # Find distance to coil
+        avgdist += np.min(dists) # Take smallest distance only
+    return avgdist/(idx2+1-idx1) # Calculate average

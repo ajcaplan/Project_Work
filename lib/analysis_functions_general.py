@@ -46,9 +46,10 @@ def plot_dispersion_relation(f_arr, k_arr, kf_matrix, plot_title, xlabel,
     # If selected in args, make probability distribution
     if conditional == True:
         kf_matrix = np.transpose(np.transpose(kf_matrix)/np.sum(kf_matrix,axis=1))
-        cbar_label = r"$\log\vert S(k|f)\vert^2$"
+        #cbar_label = r"$\log\big(\vert S(k|f)\vert^2\big)$"
+        cbar_label = r"$\log\big(\vert S(k|f)\vert^2\big)$"
     else:
-        cbar_label = r"$\log\vert S(f,k)\vert^2$"
+        cbar_label = r"$\log\big(\vert S(f,k)\vert^2\big)$"
 
     # set bounds to change tick labels on plot 
     bounds = [np.min(k_arr), np.max(k_arr), np.min(f_arr)*1e-3, np.max(f_arr)*1e-3]
@@ -71,3 +72,39 @@ def plot_dispersion_relation(f_arr, k_arr, kf_matrix, plot_title, xlabel,
     else:
         plt.show()
     plt.close()
+    
+    
+# Take dispersion relation and get frequency profile in a given range
+def get_f_profile(f_arr, kf_matrix, frange, smooth_pts=5, vlines=None, plot=False):
+    fstart = (np.abs(f_arr-frange[0])).argmin()
+    fend = (np.abs(f_arr-frange[1])).argmin()
+    f_arr = f_arr[fstart:fend+1]
+    
+    # So this works for dispersion relation or 1D FFT
+    if kf_matrix.ndim == 2:
+        profile = np.sum(np.abs(kf_matrix)**2, axis=1)
+    else:
+        profile = np.abs(kf_matrix)**2
+    profile = smooth(profile[fstart:fend+1],smooth_pts)
+    
+    if plot != False:
+        fig, ax = plt.subplots(1,1)
+        ax.plot(f_arr*1e-3, np.log(profile))
+        if vlines != None: # Vertical line checking for area calculations
+            ax.vlines(vlines[0]*1e-3, ax.get_ylim()[0], ax.get_ylim()[1], "k", linewidth=0.5)
+            ax.vlines(vlines[1]*1e-3, ax.get_ylim()[0], ax.get_ylim()[1], "k", linewidth=0.5)
+        ax.set_ylabel("Power [a.u.]")
+        ax.set_xlabel("Frequency [kHz]")
+        ax.set_title(plot)
+        plt.show()
+        plt.close()
+        
+    return f_arr, profile
+
+# From above profile, determine area between frequencies, accounting for noise
+def get_f_area(f_arr, f_profile, frange):
+    fstart = (np.abs(f_arr-frange[0])).argmin()
+    fend = (np.abs(f_arr-frange[1])).argmin()
+    full = trapz(f_profile[fstart:fend+1], x=f_arr[fstart:fend+1])
+    noise = trapz([f_profile[fstart],p[1][fend]], x=[f_arr[fstart],f_arr[fend]])
+    return full-noise

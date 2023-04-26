@@ -186,9 +186,9 @@ def get_kf_spec(bes_time, fluct_data, apdpos, col, timeslice): # Col is int from
 # Sum together |S(f,k)| for all crash-adjacent windows in a given timeslice
 def kf_spec_sum_windows(bes_time, fluct_data, apdpos, col, timeslices):
     first_kf = get_kf_spec(bes_time, fluct_data, apdpos, col, timeslices[0])
-    kf_summed = np.abs(first_kf[2])
+    kf_summed = np.abs(first_kf[2])**2
     for window in range(1,len(timeslices)):
-        kf_summed += np.abs(get_kf_spec(bes_time, fluct_data, apdpos, col, timeslices[window])[2])
+        kf_summed += np.abs(get_kf_spec(bes_time, fluct_data, apdpos, col, timeslices[window])[2])**2
     return first_kf[0], first_kf[1], kf_summed
 
 
@@ -214,9 +214,9 @@ def plot_kf_spec(f_arr, k_arr, kf_matrix, plot_title, fint=50.0, fmin=0.0, fmax=
         f_arr = smooth_freqs
     if conditional == True:
         kf_matrix = np.transpose(np.transpose(kf_matrix)/np.sum(kf_matrix,axis=1))
-        cbar_label = r"$\log\vert S(k|f)\vert^2$"
+        cbar_label = r"$\log\big(\vert S(k|f)\vert^2\big)$"
     else:
-        cbar_label = r"$\log\vert S(f,k)\vert^2$"
+        cbar_label = r"$\log\big(\log\vert S(f,k)\vert^2\big)$"
     
     # Only need to plot a section of the spectrum. At least half not needed.
     kf_matrix = kf_matrix[(np.abs(f_arr - fmin)).argmin():(np.abs(f_arr - fmax)).argmin()]

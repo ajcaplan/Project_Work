@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.gridspec import GridSpec
 import matplotlib.path as mplPath
+import matplotlib.ticker as ticker
 from astropy.convolution import convolve
 import shapely.geometry as geom
 import imageio
@@ -115,3 +116,9 @@ def logfunc1(x, *pars):
 
 def datestamp():
     return datetime.date.today().strftime("%b%d")
+
+# For standard form in colourbar tick labels
+def fmt(x, pos):
+    a, b = '{:.2e}'.format(x).split('e')
+    b = int(b)
+    return r'$10^{{{}}}$'.format(b)
