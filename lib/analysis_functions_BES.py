@@ -45,6 +45,55 @@ def sol_dist(equilib_time, equilib_R, equilib_Z, equilib_psi, apdpos, timeslice,
         all_time.append(np.mean(this_time))
     return np.mean(all_time)
 
+# Similar to above but for a channel rathre than for a column, slightly better calculation
+def channel_sol_dist(equilib_time, equilib_R, equilib_Z, equilib_psi, apdpos, timeslice, ch):   
+    # Only looking for points in the relevant z and right of array's left-most point
+    # Add on bits to ensure the contour extends far enough
+    zmin = np.abs(np.min(apdpos[:,1])-equilib_Z-0.1).argmin()
+    zmax = np.abs(np.max(apdpos[:,1])-equilib_Z+0.1).argmin()
+    rmin = np.abs(np.min(apdpos[:,0])-equilib_R-0.1).argmin()
+    
+    # Convert timeslice to indices of equilib_time
+    if isinstance(timeslice, list) or isinstance(timeslice, np.ndarray):
+        idx1 = np.abs(equilib_time-timeslice[0]).argmin()
+        idx2 = np.abs(equilib_time-timeslice[1]).argmin()
+    else:
+        idx1 = np.abs(equilib_time-timeslice).argmin()
+        idx2 = idx1
+    
+    # Get coordinates of each channel in the specified column
+    ch_pos = apdpos[ch]
+    
+    min_dists = []
+    for time in range(idx1, idx2+1):
+        # Get path of separatrix
+        equilib_psi_t = equilib_psi[time] # Data at this time
+        CS = plt.contour(equilib_R[rmin:], equilib_Z[zmin:zmax], equilib_psi_t[zmin:zmax,rmin:], [1.0])
+        plt.close()
+        path = mplPath.Path(CS.allsegs[0][0])
+
+        # Extrapolate to get more coordinates
+        verts = path.vertices
+        verts_expanded = []
+        idx = 0
+        for i in verts[:-1]:
+            for r in np.linspace(verts[idx,0],verts[idx+1,0],50): # Get lots of points
+                verts_expanded.append([r, np.interp(r, verts[idx:idx+2,0], verts[idx:idx+2,1])])
+            idx += 1
+        verts_expanded = np.asarray(verts_expanded)
+        
+        dists = np.asarray([])
+        for pt in verts_expanded: # For each point on separatrix
+            dists = np.append(dists, np.linalg.norm(ch_pos-pt)) # Find distance to coil
+        pt_idx = dists.argmin()
+        
+        # Check if inside or outside based on R coord
+        if verts_expanded[pt_idx,0] > ch_pos[0]:
+            min_dists.append(-1*np.min(dists))
+        else:
+            min_dists.append(np.min(dists))
+    return np.mean(min_dists)
+
 # Use upper tangential Dalpha to work out times of crashes in a given timeslice
 # based on a threshold maximum worked out in the main Notebook
 def get_crash_times(utda_time, utda_data, threshold, timeslice):
@@ -87,7 +136,7 @@ def sum_bes_fluct_spectrogram(shot, bes_time, fluct_data, col, timeslice, n=8, f
     channels = []
     for i in range(4): # For the given column, get each channel index
         channels.append(i*8+col)
-    
+    f_samp = 1/(np.mean(np.diff(bes_time)))
     freq, times, Sxx = sig.spectrogram(fluct_data[:,idx1:idx2], fs=f_samp, 
                                        nperseg=(2 ** n), scaling='spectrum')
     
@@ -122,6 +171,22 @@ def sum_bes_fluct_spectrogram(shot, bes_time, fluct_data, col, timeslice, n=8, f
         else:
             plt.show()
         plt.close()
+    return freq, times + bes_time[idx1], summed_Sxx
+
+# Similar to above function but doesn't use only part of spectrgoram. Not for immediate plotting
+def sum_full_spectrogram(shot, bes_time, fluct_data, col, timeslice, n=8):
+    idx1 = (np.abs(bes_time - timeslice[0])).argmin()
+    idx2 = (np.abs(bes_time - timeslice[1])).argmin()
+    channels = []
+    for i in range(4): # For the given column, get each channel index
+        channels.append(i*8+col)
+    f_samp = 1/(np.mean(np.diff(bes_time)))
+    freq, times, Sxx = sig.spectrogram(fluct_data[:,idx1:idx2], fs=f_samp, nperseg=(2**n), scaling='spectrum')
+    
+    summed_Sxx = np.asarray(Sxx[channels[0]])
+    for ch in channels[1:]:
+        summed_Sxx += Sxx[ch]
+    
     return freq, times + bes_time[idx1], summed_Sxx
 
 # Calculate the FFT of one channel of BES data in time
