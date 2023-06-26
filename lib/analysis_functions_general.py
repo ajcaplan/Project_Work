@@ -129,6 +129,7 @@ def get_k_profile(f_arr, k_arr, kf_matrix, f_range, fit=None, fit_range=None, pl
         
         # Get fit paramaters
         popt, pcov = curve_fit(fit, k_arr[fit_start:fit_stop], profile[fit_start:fit_stop])
+        err = np.sqrt(np.diag(pcov))[1] # Error in centroid position
         residuals = profile[fit_start:fit_stop] - fit(k_arr[fit_start:fit_stop], *popt)
         ss_res = np.sum(residuals**2)
         ss_tot = np.sum((profile[fit_start:fit_stop] - np.mean(profile[fit_start:fit_stop]))**2)
